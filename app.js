@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const { SUPABASE_URL, SUPABASE_ANON_KEY } = window.APP_CONFIG;
+  const { SUPABASE_URL, SUPABASE_ANON_KEY, WHATSAPP_CHECK_WEBHOOK_URL } = window.APP_CONFIG;
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let adminPassword = null; // fica só em memória, nunca em localStorage
@@ -299,6 +299,16 @@
 
     personForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+      personMsg.textContent = "Verificando número no WhatsApp…";
+      personMsg.className = "form-msg";
+
+      const check = await checkWhatsappNumber(personPhone.value.trim());
+      if (!check.ok) {
+        personMsg.textContent = check.reason;
+        personMsg.className = "form-msg error";
+        return;
+      }
+
       personMsg.textContent = "Salvando…";
       personMsg.className = "form-msg";
 
@@ -370,6 +380,41 @@
       return "Essa pessoa não está mais no sorteio atual — recarregue a página e tente de novo.";
     }
     return "Não foi possível concluir a ação. Tente novamente.";
+  }
+
+  // ---------------------------------------------------------------------
+  // Confere se o numero tem WhatsApp ativo antes de deixar salvar
+  // ---------------------------------------------------------------------
+  async function checkWhatsappNumber(phone) {
+    if (!WHATSAPP_CHECK_WEBHOOK_URL) {
+      return { ok: true };
+    }
+
+    try {
+      const res = await fetch(WHATSAPP_CHECK_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ number: phone }),
+      });
+
+      const body = await res.json();
+      const result = Array.isArray(body) ? body[0] : body;
+      const entry = result?.data?.[0];
+
+      if (entry?.exists === true) {
+        return { ok: true };
+      }
+
+      return {
+        ok: false,
+        reason: "Esse número não tem WhatsApp ativo. Confira o DDI+DDD+número (ex: 5531999999999) e tente de novo.",
+      };
+    } catch (err) {
+      return {
+        ok: false,
+        reason: "Não foi possível verificar esse número agora. Tente novamente em instantes.",
+      };
+    }
   }
 
   async function loadPeople() {

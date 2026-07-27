@@ -4,4 +4,7 @@
 window.APP_CONFIG = {
   SUPABASE_URL: "https://fsahjrulfwyhttnykjvb.supabase.co",
   SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYWhqcnVsZnd5aHR0bnlranZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxMTIwODcsImV4cCI6MjA5ODY4ODA4N30.vQ1xbEz-i7z0fAW4AEOIrcpQewABhb7NKU0cFZOPg6s",
+  // Webhook do n8n que confere se o numero tem WhatsApp ativo antes de salvar
+  // (ver n8n/3-validar-numero.json).
+  WHATSAPP_CHECK_WEBHOOK_URL: "https://n8n.deverick.cloud/webhook/ovos",
 };

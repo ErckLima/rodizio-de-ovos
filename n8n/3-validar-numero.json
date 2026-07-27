@@ -1,0 +1,90 @@
+{
+  "name": "Rodizio de Ovos - Validar numero WhatsApp",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ovos",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "name": "Webhook /ovos",
+      "id": "webhook-ovos",
+      "position": [-160, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://SUA-URL-EVOLUTION/chat/whatsappNumbers/SUA_INSTANCIA",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "COLOQUE_SUA_EVOLUTION_APIKEY_AQUI" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"numbers\": [\"{{ $json.body.number }}\"]\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Checar numero (Evolution)",
+      "id": "http-check-number",
+      "position": [80, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst data = items.map((item) => item.json);\n\nreturn [\n  {\n    json: {\n      success: true,\n      data,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "name": "Montar resposta",
+      "id": "code-build-response",
+      "position": [320, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "name": "Responder",
+      "id": "respond-webhook",
+      "position": [560, 0]
+    }
+  ],
+  "connections": {
+    "Webhook /ovos": {
+      "main": [
+        [{ "node": "Checar numero (Evolution)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Checar numero (Evolution)": {
+      "main": [
+        [{ "node": "Montar resposta", "type": "main", "index": 0 }]
+      ]
+    },
+    "Montar resposta": {
+      "main": [
+        [{ "node": "Responder", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

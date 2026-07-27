@@ -81,6 +81,11 @@ Os arquivos estão em [`n8n/`](n8n):
 - [`2-lembrete-segunda.json`](n8n/2-lembrete-segunda.json) — roda toda
   segunda às 08:00, busca o último sorteio e reenvia o lembrete para os
   mesmos dois.
+- [`3-validar-numero.json`](n8n/3-validar-numero.json) — webhook (`POST
+  /webhook/ovos`) que o site chama antes de salvar uma pessoa. Recebe
+  `{ "number": "5531999999999" }`, confere no Evolution se esse número tem
+  WhatsApp ativo e responde `[{ "success": true, "data": [{ "exists": true,
+  ... }] }]`. Se `exists` vier `false`, o site bloqueia o cadastro.
 
 Para cada arquivo: **Workflows > Import from File** no n8n. Depois, abra
 cada nó de HTTP Request e preencha os placeholders:
@@ -93,10 +98,19 @@ cada nó de HTTP Request e preencha os placeholders:
 | `COLOQUE_SUA_EVOLUTION_APIKEY_AQUI` | apikey da sua instância Evolution |
 | `COLOQUE_O_NUMERO_DO_ADMIN_AQUI` (só no workflow de sexta) | número de WhatsApp seu, para receber o alerta de "poucas pessoas ativas" |
 
-Ative (`Active`) os dois workflows depois de preencher tudo. Dica: use o
+Ative (`Active`) os três workflows depois de preencher tudo. Dica: use o
 botão **Execute Workflow** manualmente uma vez em cada um para validar antes
 de deixar no automático — o de sexta já vai realizar um sorteio de verdade,
 então só teste com o banco populado e ciente disso.
+
+> **Sobre o `3-validar-numero.json`:** o endpoint da Evolution usado
+> (`/chat/whatsappNumbers/{instancia}`) é o padrão da v2, mas pode variar
+> conforme a versão/instalação do seu Evolution. Se o node "Checar numero
+> (Evolution)" der erro, confira na documentação da sua instância qual é o
+> endpoint de "verificar se número existe no WhatsApp" e ajuste a URL. A
+> URL pública do webhook (`https://SEU-N8N/webhook/ovos`) precisa ser
+> configurada também em [`config.js`](config.js), no campo
+> `WHATSAPP_CHECK_WEBHOOK_URL`.
 
 > Os placeholders ficam direto no corpo/headers do nó por simplicidade. Se
 > preferir mais segurança, troque por Credentials do n8n (Header Auth) em
@@ -132,4 +146,5 @@ config.js                     URL + anon key do Supabase (editar antes de public
 database/schema.sql          tabelas, RLS e funções (rodar no Supabase)
 n8n/1-sorteio-sexta.json     workflow de sexta-feira
 n8n/2-lembrete-segunda.json  workflow de segunda-feira
+n8n/3-validar-numero.json    webhook de validacao de numero WhatsApp
 ```
