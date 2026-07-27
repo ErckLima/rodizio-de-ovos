@@ -161,8 +161,10 @@ $$;
 --   * sorteia 2 pessoas ativas que ainda nao foram sorteadas no ciclo atual;
 --   * quando o "pool" de quem falta sortear esvazia, reinicia o ciclo;
 --   * se sobrar 1 pessoa (numero impar de ativos), ela entra garantida no
---     sorteio e o ciclo reinicia para as demais, evitando repetir alguem
---     que acabou de comprar.
+--     sorteio e o ciclo reinicia para as demais. Para nao sobrecarregar
+--     sempre a mesma pessoa, quem repete e escolhido entre a dupla do
+--     PRIMEIRO sorteio do ciclo que esta terminando (quem esta esperando
+--     ha mais tempo desde que comprou), nunca alguem escolhido ao acaso.
 -- ----------------------------------------------------------------------------
 
 create or replace function ovos_perform_weekly_draw()
@@ -182,6 +184,8 @@ declare
   v_p1 record;
   v_p2 record;
   v_leftover record;
+  v_first_draw record;
+  v_repeat_id uuid;
 begin
   select count(*) into v_active_count from ovos_people where active = true;
   if v_active_count < 2 then
@@ -208,14 +212,42 @@ begin
     select id, name, phone into v_leftover from ovos_people where active = true and drawn_in_cycle = false limit 1;
     v_p1 := v_leftover;
 
+    -- quem vai "repetir" (comprar de novo tao cedo) e escolhido, de
+    -- preferencia, entre a dupla do primeiro sorteio deste ciclo -- essas
+    -- sao as pessoas que estao esperando ha mais tempo desde a ultima vez
+    -- que compraram, entao repetir com elas e o mais justo possivel.
+    select d.person1_id, d.person2_id
+      into v_first_draw
+      from ovos_draws d
+     where d.cycle_number = v_cycle
+     order by d.created_at asc
+     limit 1;
+
+    v_repeat_id := null;
+    if found then
+      select id into v_repeat_id
+        from ovos_people
+       where active = true
+         and id <> v_leftover.id
+         and id in (v_first_draw.person1_id, v_first_draw.person2_id)
+       order by random()
+       limit 1;
+    end if;
+
+    if v_repeat_id is not null then
+      select id, name, phone into v_p2 from ovos_people where id = v_repeat_id;
+    else
+      -- fallback: ninguem da dupla do primeiro sorteio esta mais ativo
+      select id, name, phone
+        into v_p2
+        from ovos_people
+       where active = true and id <> v_leftover.id
+       order by random() limit 1;
+    end if;
+
     update ovos_people set drawn_in_cycle = false where active = true and id <> v_leftover.id;
     v_cycle := v_cycle + 1;
     update ovos_app_config set cycle_number = v_cycle where id = 1;
-
-    select id, name, phone into v_p2
-      from ovos_people
-     where active = true and drawn_in_cycle = false and id <> v_leftover.id
-     order by random() limit 1;
 
     update ovos_people set drawn_in_cycle = true where id in (v_p1.id, v_p2.id);
 
