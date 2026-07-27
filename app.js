@@ -116,7 +116,7 @@
       <h2 class="status-title">Status do ciclo</h2>
       <div class="status-columns">
         <div class="status-col">
-          <h3>✅ Já compraram (${done.length})</h3>
+          <h3>✅ Já foram sorteados (${done.length})</h3>
           ${renderList(done)}
         </div>
         <div class="status-col">
