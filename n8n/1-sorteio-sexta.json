@@ -21,12 +21,12 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://SEU-PROJETO.supabase.co/rest/v1/rpc/ovos_perform_weekly_draw",
+        "url": "https://fsahjrulfwyhttnykjvb.supabase.co/rest/v1/rpc/ovos_perform_weekly_draw",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "apikey", "value": "COLOQUE_A_SERVICE_ROLE_KEY_AQUI" },
-            { "name": "Authorization", "value": "Bearer COLOQUE_A_SERVICE_ROLE_KEY_AQUI" },
+            { "name": "apikey", "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYWhqcnVsZnd5aHR0bnlranZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxMTIwODcsImV4cCI6MjA5ODY4ODA4N30.vQ1xbEz-i7z0fAW4AEOIrcpQewABhb7NKU0cFZOPg6s" },
+            { "name": "Authorization", "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzYWhqcnVsZnd5aHR0bnlranZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxMTIwODcsImV4cCI6MjA5ODY4ODA4N30.vQ1xbEz-i7z0fAW4AEOIrcpQewABhb7NKU0cFZOPg6s" },
             { "name": "Content-Type", "value": "application/json" }
           ]
         },

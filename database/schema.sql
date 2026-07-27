@@ -85,7 +85,7 @@ create or replace function ovos_admin_login(p_password text)
 returns boolean
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_hash text;
@@ -102,7 +102,7 @@ create or replace function ovos_admin_add_person(p_password text, p_name text, p
 returns uuid
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_hash text;
@@ -121,7 +121,7 @@ create or replace function ovos_admin_update_person(p_password text, p_id uuid, 
 returns void
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_hash text;
@@ -142,7 +142,7 @@ create or replace function ovos_admin_delete_person(p_password text, p_id uuid)
 returns void
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_hash text;
@@ -173,7 +173,7 @@ returns table (
 )
 language plpgsql
 security definer
-set search_path = public
+set search_path = public, extensions
 as $$
 declare
   v_active_count int;
