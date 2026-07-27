@@ -83,6 +83,46 @@
   }
 
   // ---------------------------------------------------------------------
+  // Tabela de status do ciclo: quem já comprou e quem ainda falta
+  // ---------------------------------------------------------------------
+  async function loadCycleStatus() {
+    const area = document.getElementById("cycleStatusArea");
+
+    const { data, error } = await sb
+      .from("ovos_people")
+      .select("name, drawn_in_cycle")
+      .eq("active", true)
+      .order("name");
+
+    if (error || !data || data.length === 0) {
+      area.innerHTML = "";
+      return;
+    }
+
+    const done = data.filter((p) => p.drawn_in_cycle);
+    const pending = data.filter((p) => !p.drawn_in_cycle);
+
+    const renderList = (list) =>
+      list.length
+        ? `<ul>${list.map((p) => `<li>${escapeHtml(p.name)}</li>`).join("")}</ul>`
+        : `<p class="status-empty">Ninguém aqui.</p>`;
+
+    area.innerHTML = `
+      <h2 class="status-title">Status do ciclo</h2>
+      <div class="status-columns">
+        <div class="status-col">
+          <h3>✅ Já compraram (${done.length})</h3>
+          ${renderList(done)}
+        </div>
+        <div class="status-col">
+          <h3>⏳ Ainda vão sortear (${pending.length})</h3>
+          ${renderList(pending)}
+        </div>
+      </div>
+    `;
+  }
+
+  // ---------------------------------------------------------------------
   // Modais
   // ---------------------------------------------------------------------
   function showOverlay(el) {
@@ -209,6 +249,7 @@
         resetForm();
         loadPeople();
         loadLatestDraw();
+        loadCycleStatus();
       } catch (err) {
         personMsg.textContent = readableError(err);
         personMsg.className = "form-msg error";
@@ -238,6 +279,7 @@
       }
       loadPeople();
       loadLatestDraw();
+      loadCycleStatus();
     };
   }
 
@@ -297,5 +339,6 @@
     initLogin();
     initAdminPanel();
     loadLatestDraw();
+    loadCycleStatus();
   });
 })();

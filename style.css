@@ -157,6 +157,68 @@ header p {
 }
 .error-state { color: var(--accent-2); }
 
+/* ---------- status do ciclo ---------- */
+.cycle-status {
+  margin-top: 8px;
+}
+
+.status-title {
+  text-align: center;
+  font-size: 1rem;
+  color: var(--muted);
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.status-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 560px) {
+  .status-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.status-col {
+  background: var(--card-bg);
+  border-radius: 18px;
+  padding: 18px 20px;
+  box-shadow: var(--shadow);
+}
+
+.status-col h3 {
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.status-col ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.status-col li {
+  font-size: 0.9rem;
+  padding: 4px 0;
+  border-bottom: 1px solid #f0e6d6;
+}
+.status-col li:last-child {
+  border-bottom: none;
+}
+
+.status-empty {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 /* ---------- botão flutuante de admin ---------- */
 .admin-fab {
   position: fixed;
