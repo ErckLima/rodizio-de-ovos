@@ -189,7 +189,7 @@ begin
   end if;
 
   select count(*) into v_pool_count from ovos_people where active = true and drawn_in_cycle = false;
-  select cycle_number into v_cycle from ovos_app_config where id = 1;
+  select ovos_app_config.cycle_number into v_cycle from ovos_app_config where id = 1;
 
   if v_pool_count = 0 then
     -- ciclo completo: reinicia todo mundo e sorteia do zero
