@@ -156,6 +156,101 @@ end;
 $$;
 
 -- ----------------------------------------------------------------------------
+-- Invalida um dos dois sorteados do sorteio atual (ex: a pessoa saiu da
+-- empresa e ninguem lembrou de inativar). Inativa a pessoa automaticamente
+-- e sorteia um substituto so pra aquela vaga, sem mexer no outro sorteado.
+-- ----------------------------------------------------------------------------
+
+create or replace function ovos_admin_invalidate_draw(p_password text, p_draw_id uuid, p_invalid_person_id uuid)
+returns table (
+  replaced_person_id uuid,
+  replacement_id uuid,
+  replacement_name text,
+  replacement_phone text,
+  slot text
+)
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_hash text;
+  v_draw record;
+  v_slot text;
+  v_other_id uuid;
+  v_replacement record;
+begin
+  select admin_password_hash into v_hash from ovos_app_config where id = 1;
+  if v_hash is null or v_hash <> crypt(p_password, v_hash) then
+    raise exception 'senha invalida';
+  end if;
+
+  select * into v_draw from ovos_draws where id = p_draw_id;
+  if not found then
+    raise exception 'sorteio nao encontrado';
+  end if;
+
+  if v_draw.person1_id = p_invalid_person_id then
+    v_slot := 'person1';
+    v_other_id := v_draw.person2_id;
+  elsif v_draw.person2_id = p_invalid_person_id then
+    v_slot := 'person2';
+    v_other_id := v_draw.person1_id;
+  else
+    raise exception 'essa pessoa nao esta neste sorteio';
+  end if;
+
+  update ovos_people set active = false where id = p_invalid_person_id;
+
+  -- tenta achar substituto que ainda nao comprou neste ciclo (mantem o
+  -- sorteio justo); se ninguem sobrar, aceita repetir alguem como ultimo
+  -- recurso, pra correcao nunca travar por falta de gente
+  select id, name, phone
+    into v_replacement
+    from ovos_people
+   where active = true
+     and drawn_in_cycle = false
+     and id <> v_other_id
+     and id <> p_invalid_person_id
+   order by random()
+   limit 1;
+
+  if not found then
+    select id, name, phone
+      into v_replacement
+      from ovos_people
+     where active = true
+       and id <> v_other_id
+       and id <> p_invalid_person_id
+     order by random()
+     limit 1;
+  end if;
+
+  if not found then
+    raise exception 'nao ha ninguem ativo disponivel para substituir';
+  end if;
+
+  update ovos_people set drawn_in_cycle = true where id = v_replacement.id;
+
+  if v_slot = 'person1' then
+    update ovos_draws
+       set person1_id = v_replacement.id,
+           person1_name = v_replacement.name,
+           person1_phone = v_replacement.phone
+     where id = p_draw_id;
+  else
+    update ovos_draws
+       set person2_id = v_replacement.id,
+           person2_name = v_replacement.name,
+           person2_phone = v_replacement.phone
+     where id = p_draw_id;
+  end if;
+
+  return query select p_invalid_person_id, v_replacement.id, v_replacement.name, v_replacement.phone, v_slot;
+end;
+$$;
+
+-- ----------------------------------------------------------------------------
 -- Funcao do sorteio semanal, chamada pelo n8n (com a service_role key, nunca
 -- pela pagina web). Regras:
 --   * sorteia 2 pessoas ativas que ainda nao foram sorteadas no ciclo atual;
@@ -279,3 +374,4 @@ grant execute on function ovos_admin_login(text) to anon, authenticated;
 grant execute on function ovos_admin_add_person(text, text, text) to anon, authenticated;
 grant execute on function ovos_admin_update_person(text, uuid, text, text, boolean) to anon, authenticated;
 grant execute on function ovos_admin_delete_person(text, uuid) to anon, authenticated;
+grant execute on function ovos_admin_invalidate_draw(text, uuid, uuid) to anon, authenticated;

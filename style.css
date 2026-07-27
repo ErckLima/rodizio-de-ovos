@@ -219,6 +219,30 @@ header p {
   color: var(--muted);
 }
 
+/* ---------- invalidar sorteio (painel admin) ---------- */
+#currentDrawAdmin h3 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+}
+
+.draw-admin-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0e6d6;
+}
+.draw-admin-row:last-of-type {
+  border-bottom: none;
+}
+
+.draw-admin-row .btn-danger {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+
 /* ---------- botão flutuante de admin ---------- */
 .admin-fab {
   position: fixed;

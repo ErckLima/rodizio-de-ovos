@@ -5,6 +5,7 @@
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let adminPassword = null; // fica só em memória, nunca em localStorage
+  let currentDraw = null;
 
   // ---------------------------------------------------------------------
   // Fundo animado com ovinhos flutuando
@@ -45,10 +46,14 @@
     if (!data || data.length === 0) {
       drawMeta.textContent = "";
       winnersArea.innerHTML = `<div class="empty-state">Nenhum sorteio realizado ainda. O primeiro sorteio acontece na próxima sexta-feira 🎉</div>`;
+      currentDraw = null;
+      renderCurrentDrawAdmin();
       return;
     }
 
     const draw = data[0];
+    currentDraw = draw;
+    renderCurrentDrawAdmin();
     const dateLabel = new Date(draw.draw_date + "T00:00:00").toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "long",
@@ -120,6 +125,78 @@
         </div>
       </div>
     `;
+  }
+
+  // ---------------------------------------------------------------------
+  // Invalidar sorteio de uma pessoa (ex: ela saiu e ninguém inativou)
+  // ---------------------------------------------------------------------
+  function renderCurrentDrawAdmin() {
+    const area = document.getElementById("currentDrawAdmin");
+    if (!area) return;
+
+    if (!currentDraw) {
+      area.innerHTML = `<p class="status-empty">Nenhum sorteio ativo ainda.</p>`;
+      return;
+    }
+
+    const row = (id, name) => `
+      <div class="draw-admin-row">
+        <span>${escapeHtml(name)}</span>
+        <button type="button" class="btn btn-danger" data-invalidate="${id}">🚫 Indisponível</button>
+      </div>
+    `;
+
+    area.innerHTML = `
+      <h3>Sorteio atual (Ciclo #${currentDraw.cycle_number})</h3>
+      ${row(currentDraw.person1_id, currentDraw.person1_name)}
+      ${row(currentDraw.person2_id, currentDraw.person2_name)}
+      <div class="form-msg" id="invalidateMsg"></div>
+    `;
+
+    area.querySelectorAll("[data-invalidate]").forEach((btn) => {
+      btn.addEventListener("click", () => invalidateDrawPerson(btn.dataset.invalidate));
+    });
+  }
+
+  async function invalidateDrawPerson(personId) {
+    const msg = document.getElementById("invalidateMsg");
+    const name =
+      currentDraw.person1_id === personId ? currentDraw.person1_name : currentDraw.person2_name;
+
+    const ok = confirm(
+      `Marcar ${name} como indisponível?\n\nIsso vai inativá-la (não participa mais dos sorteios) e sortear outra pessoa no lugar dela só para esta semana.`
+    );
+    if (!ok) return;
+
+    msg.textContent = "Processando…";
+    msg.className = "form-msg";
+
+    const { data, error } = await sb.rpc("ovos_admin_invalidate_draw", {
+      p_password: adminPassword,
+      p_draw_id: currentDraw.id,
+      p_invalid_person_id: personId,
+    });
+
+    if (error) {
+      msg.textContent = readableError(error);
+      msg.className = "form-msg error";
+      return;
+    }
+
+    const result = Array.isArray(data) ? data[0] : data;
+    const waText = encodeURIComponent(
+      "🥚 Oi! Houve uma troca no rodízio de ovos desta semana e você entrou no lugar de outra pessoa. Pode comprar 1 cartela de 30 ovos até quinta? 🛒"
+    );
+    const waLink = `https://wa.me/${result.replacement_phone}?text=${waText}`;
+
+    msg.innerHTML = `${escapeHtml(name)} foi inativado(a) e substituído(a) por <strong>${escapeHtml(
+      result.replacement_name
+    )}</strong>. <a href="${waLink}" target="_blank" rel="noopener">Avisar no WhatsApp</a>`;
+    msg.className = "form-msg ok";
+
+    loadPeople();
+    loadLatestDraw();
+    loadCycleStatus();
   }
 
   // ---------------------------------------------------------------------
@@ -286,6 +363,12 @@
   function readableError(err) {
     const msg = err?.message || "";
     if (msg.includes("senha invalida")) return "Senha incorreta.";
+    if (msg.includes("nao ha ninguem ativo disponivel")) {
+      return "Não há ninguém ativo disponível para substituir. Cadastre mais gente antes de invalidar.";
+    }
+    if (msg.includes("essa pessoa nao esta neste sorteio")) {
+      return "Essa pessoa não está mais no sorteio atual — recarregue a página e tente de novo.";
+    }
     return "Não foi possível concluir a ação. Tente novamente.";
   }
 
