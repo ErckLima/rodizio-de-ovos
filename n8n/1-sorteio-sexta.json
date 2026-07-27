@@ -89,7 +89,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"number\": \"{{ $json.person1_phone }}\",\n  \"text\": \"🥚 Bom dia! Você foi sorteado(a) esta semana no rodízio de ovos, junto com {{ $json.person2_name }}. Não esqueça de comprar 1 cartela de 30 ovos até quinta! 🛒\"\n}"
+        "jsonBody": "={\n  \"number\": \"55{{ $json.person1_phone }}\",\n  \"text\": \"🥚 Bom dia! Você foi sorteado(a) esta semana no rodízio de ovos, junto com {{ $json.person2_name }}. Não esqueça de comprar 1 cartela de 30 ovos até quinta! 🛒\"\n}"
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -110,7 +110,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"number\": \"{{ $json.person2_phone }}\",\n  \"text\": \"🥚 Bom dia! Você foi sorteado(a) esta semana no rodízio de ovos, junto com {{ $json.person1_name }}. Não esqueça de comprar 1 cartela de 30 ovos até quinta! 🛒\"\n}"
+        "jsonBody": "={\n  \"number\": \"55{{ $json.person2_phone }}\",\n  \"text\": \"🥚 Bom dia! Você foi sorteado(a) esta semana no rodízio de ovos, junto com {{ $json.person1_name }}. Não esqueça de comprar 1 cartela de 30 ovos até quinta! 🛒\"\n}"
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,

@@ -187,7 +187,7 @@
     const waText = encodeURIComponent(
       "🥚 Oi! Houve uma troca no rodízio de ovos desta semana e você entrou no lugar de outra pessoa. Pode comprar 1 cartela de 30 ovos até quinta? 🛒"
     );
-    const waLink = `https://wa.me/${result.replacement_phone}?text=${waText}`;
+    const waLink = `https://wa.me/55${result.replacement_phone}?text=${waText}`;
 
     msg.innerHTML = `${escapeHtml(name)} foi inativado(a) e substituído(a) por <strong>${escapeHtml(
       result.replacement_name
@@ -304,8 +304,7 @@
 
       const check = await checkWhatsappNumber(personPhone.value.trim());
       if (!check.ok) {
-        personMsg.textContent = check.reason;
-        personMsg.className = "form-msg error";
+        renderPhoneCheckFailure(personPhone, personMsg, check.reason);
         return;
       }
 
@@ -407,13 +406,43 @@
 
       return {
         ok: false,
-        reason: "Esse número não tem WhatsApp ativo. Confira o DDI+DDD+número (ex: 5531999999999) e tente de novo.",
+        reason: "Esse número não tem WhatsApp ativo.",
       };
     } catch (err) {
       return {
         ok: false,
         reason: "Não foi possível verificar esse número agora. Tente novamente em instantes.",
       };
+    }
+  }
+
+  // Mostra dicas de correção quando a verificação do número falha, com um
+  // atalho pra remover o 9º dígito quando o formato permitir.
+  function renderPhoneCheckFailure(phoneInput, msgEl, reason) {
+    const phone = phoneInput.value.trim();
+    const canStrip9 = /^\d{2}9\d{8}$/.test(phone);
+
+    msgEl.className = "form-msg error";
+    msgEl.innerHTML = `
+      <div class="phone-check-alert">
+        <p>${escapeHtml(reason)}</p>
+        <ul>
+          <li>Não digite o 55 (DDI) — coloque só DDD + número.</li>
+          <li>Confira se o DDD está certo.</li>
+          <li>Números de celular mais antigos às vezes não têm o 9º dígito — se o seu tiver 11 dígitos, tente sem o 9.</li>
+        </ul>
+        ${canStrip9 ? `<button type="button" class="btn btn-muted" id="tryWithout9Btn">Tentar sem o 9</button>` : ""}
+      </div>
+    `;
+
+    const tryBtn = document.getElementById("tryWithout9Btn");
+    if (tryBtn) {
+      tryBtn.addEventListener("click", () => {
+        phoneInput.value = phone.slice(0, 2) + phone.slice(3);
+        msgEl.textContent = "";
+        msgEl.className = "form-msg";
+        phoneInput.focus();
+      });
     }
   }
 

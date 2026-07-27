@@ -344,6 +344,32 @@ header p {
 .form-msg.error { color: var(--accent-2); }
 .form-msg.ok { color: #2d9d4f; }
 
+.phone-check-alert {
+  background: #fdecec;
+  border: 1px solid #f6c7c7;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-top: 4px;
+}
+.phone-check-alert p {
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+.phone-check-alert ul {
+  margin: 0 0 8px;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.phone-check-alert li {
+  font-weight: 400;
+}
+.phone-check-alert .btn {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+}
+
 table.people-table {
   width: 100%;
   border-collapse: collapse;

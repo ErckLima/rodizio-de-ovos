@@ -57,7 +57,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"number\": \"{{ $json.person1_phone }}\",\n  \"text\": \"🥚 Bom dia! Lembrando que hoje é o dia de comprar a cartela de 30 ovos combinada na sexta. Valeu por ajudar o rodízio! 🙏\"\n}"
+        "jsonBody": "={\n  \"number\": \"55{{ $json.person1_phone }}\",\n  \"text\": \"🥚 Bom dia! Lembrando que hoje é o dia de comprar a cartela de 30 ovos combinada na sexta. Valeu por ajudar o rodízio! 🙏\"\n}"
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -78,7 +78,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"number\": \"{{ $json.person2_phone }}\",\n  \"text\": \"🥚 Bom dia! Lembrando que hoje é o dia de comprar a cartela de 30 ovos combinada na sexta. Valeu por ajudar o rodízio! 🙏\"\n}"
+        "jsonBody": "={\n  \"number\": \"55{{ $json.person2_phone }}\",\n  \"text\": \"🥚 Bom dia! Lembrando que hoje é o dia de comprar a cartela de 30 ovos combinada na sexta. Valeu por ajudar o rodízio! 🙏\"\n}"
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,

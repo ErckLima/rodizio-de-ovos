@@ -62,8 +62,8 @@
           <input type="text" id="personName" required />
         </div>
         <div class="field">
-          <label for="personPhone">WhatsApp (com DDI e DDD, só números — ex: 5511999999999)</label>
-          <input type="tel" id="personPhone" required pattern="[0-9]{10,15}" />
+          <label for="personPhone">WhatsApp (DDD + número, sem o 55 — ex: 11999999999)</label>
+          <input type="tel" id="personPhone" required pattern="[0-9]{10,11}" />
         </div>
         <div class="field inline">
           <input type="checkbox" id="personActive" checked />

@@ -27,7 +27,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"numbers\": [\"{{ $json.body.number }}\"]\n}",
+        "jsonBody": "={\n  \"numbers\": [\"55{{ $json.body.number }}\"]\n}",
         "options": {
           "response": {
             "response": {
