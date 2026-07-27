@@ -34,7 +34,7 @@
     const { data, error } = await sb
       .from("ovos_draws")
       .select("*")
-      .order("draw_date", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(1);
 
     if (error) {
