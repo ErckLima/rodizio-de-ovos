@@ -1,0 +1,110 @@
+{
+  "name": "Rodizio de Ovos - Lembrete (Segunda-feira)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 1"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "name": "Toda segunda as 08:00",
+      "id": "trigger-monday",
+      "position": [-160, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://SEU-PROJETO.supabase.co/rest/v1/ovos_draws",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "select", "value": "*" },
+            { "name": "order", "value": "draw_date.desc" },
+            { "name": "limit", "value": "1" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "COLOQUE_A_SERVICE_ROLE_KEY_AQUI" },
+            { "name": "Authorization", "value": "Bearer COLOQUE_A_SERVICE_ROLE_KEY_AQUI" }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Buscar ultimo sorteio (Supabase)",
+      "id": "http-get-last-draw",
+      "position": [80, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://SUA-URL-EVOLUTION/message/sendText/SUA_INSTANCIA",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "COLOQUE_SUA_EVOLUTION_APIKEY_AQUI" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.person1_phone }}\",\n  \"text\": \"🥚 Bom dia! Lembrando que hoje é o dia de comprar a cartela de 30 ovos combinada na sexta. Valeu por ajudar o rodízio! 🙏\"\n}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Lembrar Pessoa 1 (Evolution)",
+      "id": "http-remind-p1",
+      "position": [320, -80]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://SUA-URL-EVOLUTION/message/sendText/SUA_INSTANCIA",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "COLOQUE_SUA_EVOLUTION_APIKEY_AQUI" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.person2_phone }}\",\n  \"text\": \"🥚 Bom dia! Lembrando que hoje é o dia de comprar a cartela de 30 ovos combinada na sexta. Valeu por ajudar o rodízio! 🙏\"\n}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Lembrar Pessoa 2 (Evolution)",
+      "id": "http-remind-p2",
+      "position": [320, 80]
+    }
+  ],
+  "connections": {
+    "Toda segunda as 08:00": {
+      "main": [
+        [{ "node": "Buscar ultimo sorteio (Supabase)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Buscar ultimo sorteio (Supabase)": {
+      "main": [
+        [
+          { "node": "Lembrar Pessoa 1 (Evolution)", "type": "main", "index": 0 },
+          { "node": "Lembrar Pessoa 2 (Evolution)", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

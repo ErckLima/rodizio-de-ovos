@@ -1,0 +1,171 @@
+{
+  "name": "Rodizio de Ovos - Sorteio (Sexta-feira)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 5"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "name": "Toda sexta as 08:00",
+      "id": "trigger-friday",
+      "position": [-160, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://SEU-PROJETO.supabase.co/rest/v1/rpc/ovos_perform_weekly_draw",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "COLOQUE_A_SERVICE_ROLE_KEY_AQUI" },
+            { "name": "Authorization", "value": "Bearer COLOQUE_A_SERVICE_ROLE_KEY_AQUI" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Executar sorteio (Supabase)",
+      "id": "http-run-draw",
+      "position": [80, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-success",
+              "leftValue": "={{ $json.person1_name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "name": "Sorteio funcionou?",
+      "id": "if-success",
+      "position": [320, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://SUA-URL-EVOLUTION/message/sendText/SUA_INSTANCIA",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "COLOQUE_SUA_EVOLUTION_APIKEY_AQUI" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.person1_phone }}\",\n  \"text\": \"🥚 Bom dia! Você foi sorteado(a) esta semana no rodízio de ovos, junto com {{ $json.person2_name }}. Não esqueça de comprar 1 cartela de 30 ovos até quinta! 🛒\"\n}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Notificar Pessoa 1 (Evolution)",
+      "id": "http-notify-p1",
+      "position": [560, -100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://SUA-URL-EVOLUTION/message/sendText/SUA_INSTANCIA",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "COLOQUE_SUA_EVOLUTION_APIKEY_AQUI" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"{{ $json.person2_phone }}\",\n  \"text\": \"🥚 Bom dia! Você foi sorteado(a) esta semana no rodízio de ovos, junto com {{ $json.person1_name }}. Não esqueça de comprar 1 cartela de 30 ovos até quinta! 🛒\"\n}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Notificar Pessoa 2 (Evolution)",
+      "id": "http-notify-p2",
+      "position": [560, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://SUA-URL-EVOLUTION/message/sendText/SUA_INSTANCIA",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "COLOQUE_SUA_EVOLUTION_APIKEY_AQUI" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"COLOQUE_O_NUMERO_DO_ADMIN_AQUI\",\n  \"text\": \"⚠️ Não foi possível realizar o sorteio de ovos desta semana: {{ $json.message || 'erro desconhecido' }}. Verifique se há pelo menos 2 pessoas ativas cadastradas.\"\n}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Alertar admin (poucas pessoas ativas)",
+      "id": "http-alert-admin",
+      "position": [560, 260]
+    }
+  ],
+  "connections": {
+    "Toda sexta as 08:00": {
+      "main": [
+        [{ "node": "Executar sorteio (Supabase)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Executar sorteio (Supabase)": {
+      "main": [
+        [{ "node": "Sorteio funcionou?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Sorteio funcionou?": {
+      "main": [
+        [
+          { "node": "Notificar Pessoa 1 (Evolution)", "type": "main", "index": 0 },
+          { "node": "Notificar Pessoa 2 (Evolution)", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Alertar admin (poucas pessoas ativas)", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}

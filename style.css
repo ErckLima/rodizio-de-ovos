@@ -1,0 +1,295 @@
+:root {
+  --bg-1: #fff6e0;
+  --bg-2: #ffe1b3;
+  --card-bg: #ffffff;
+  --accent: #f2994a;
+  --accent-2: #eb5757;
+  --text: #3b2b1a;
+  --muted: #8a7660;
+  --shadow: 0 20px 40px rgba(59, 43, 26, 0.18);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  color: var(--text);
+  background: linear-gradient(160deg, var(--bg-1), var(--bg-2));
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 16px 100px;
+  position: relative;
+}
+
+/* ---------- fundo com ovinhos flutuando ---------- */
+.egg-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+.egg-bg span {
+  position: absolute;
+  bottom: -60px;
+  font-size: 2rem;
+  opacity: 0.35;
+  animation: float-up linear infinite;
+}
+@keyframes float-up {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.35; }
+  90% { opacity: 0.35; }
+  100% { transform: translateY(-110vh) rotate(25deg); opacity: 0; }
+}
+
+header, main, footer {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 720px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+header h1 {
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  margin: 0;
+}
+
+header p {
+  color: var(--muted);
+  margin: 6px 0 0;
+}
+
+/* ---------- cartão de status do sorteio ---------- */
+.draw-meta {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 18px 0 28px;
+}
+
+.winners {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 560px) {
+  .winners {
+    grid-template-columns: 1fr;
+  }
+}
+
+.winner-card {
+  background: var(--card-bg);
+  border-radius: 24px;
+  padding: 32px 20px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  transform: translateY(30px) scale(0.9) rotate(-2deg);
+  animation: reveal 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.winner-card:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+@keyframes reveal {
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+.winner-card .egg {
+  font-size: 3.2rem;
+  display: inline-block;
+  animation: wobble 2.6s ease-in-out infinite;
+}
+.winner-card:nth-child(2) .egg {
+  animation-delay: 0.3s;
+}
+
+@keyframes wobble {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  25% { transform: rotate(-6deg) translateY(-4px); }
+  75% { transform: rotate(6deg) translateY(-4px); }
+}
+
+.winner-card .name {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 10px 0 4px;
+}
+
+.winner-card .role {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.empty-state, .error-state {
+  text-align: center;
+  background: var(--card-bg);
+  border-radius: 20px;
+  padding: 32px 20px;
+  box-shadow: var(--shadow);
+  color: var(--muted);
+}
+.error-state { color: var(--accent-2); }
+
+/* ---------- botão flutuante de admin ---------- */
+.admin-fab {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 5;
+  background: var(--text);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 14px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.15s ease;
+}
+.admin-fab:hover { transform: translateY(-2px); }
+
+/* ---------- modal ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(59, 43, 26, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 10;
+}
+.modal-overlay[hidden] { display: none; }
+
+.modal {
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 86vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow);
+}
+.modal h2 {
+  margin-top: 0;
+}
+.modal .close-btn {
+  float: right;
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.field {
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.field input[type="text"],
+.field input[type="password"],
+.field input[type="tel"] {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #e2d5c3;
+  font-size: 1rem;
+}
+.field.inline {
+  flex-direction: row;
+  align-items: center;
+}
+
+.btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-danger { background: var(--accent-2); color: #fff; }
+.btn-muted { background: #f0e6d6; color: var(--text); }
+
+.form-msg {
+  font-size: 0.85rem;
+  margin-top: 6px;
+  min-height: 1.1em;
+}
+.form-msg.error { color: var(--accent-2); }
+.form-msg.ok { color: #2d9d4f; }
+
+table.people-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+table.people-table th, table.people-table td {
+  text-align: left;
+  padding: 8px 6px;
+  border-bottom: 1px solid #f0e6d6;
+}
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.badge.active { background: #e3f6e8; color: #2d9d4f; }
+.badge.inactive { background: #f4e4e4; color: var(--accent-2); }
+.badge.drawn { background: #fdeecb; color: #b3720b; margin-left: 4px; }
+
+.row-actions button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 2px 4px;
+}
+
+hr.sep {
+  border: none;
+  border-top: 1px solid #f0e6d6;
+  margin: 20px 0;
+}
