@@ -40,6 +40,13 @@ create table if not exists ovos_people (
 -- assim que essa data passa -- sem precisar de cron job.
 alter table ovos_people add column if not exists inactive_until date;
 
+-- Data a partir de quando a pessoa DEVE ficar inativa (agendamento de
+-- ferias com antecedencia). So faz sentido quando active=true: a pessoa
+-- continua participando normalmente ate essa data chegar, e so entao
+-- ovos_reactivate_expired() a tira do sorteio sozinha (junto com o
+-- inactive_until, se tiver sido definido, pra ela ja voltar sozinha depois).
+alter table ovos_people add column if not exists inactive_from date;
+
 -- Historico de sorteios (usado pela pagina principal e pelo lembrete de segunda).
 create table if not exists ovos_draws (
   id uuid primary key default gen_random_uuid(),
@@ -81,12 +88,15 @@ revoke insert, update, delete on ovos_draws from anon, authenticated;
 revoke all on ovos_app_config from anon, authenticated;
 
 -- ----------------------------------------------------------------------------
--- Reativa automaticamente quem estava inativo com data de retorno definida
--- (ferias/ausencia) assim que essa data passa. Chamada no inicio do sorteio
--- semanal e da invalidacao de sorteio, e tambem pelo site sempre que a
--- lista de pessoas ou o status do ciclo sao carregados -- assim ninguem
--- fica esquecido como inativo so porque nenhum sorteio rodou nesse meio
--- tempo.
+-- Sincroniza o status de quem tem ausencia programada, nas duas direcoes:
+--   * quem estava ATIVO com inactive_from definido e a data chegou -> fica
+--     inativo sozinho (comeco de ferias agendadas com antecedencia);
+--   * quem estava INATIVO com inactive_until definido e a data passou ->
+--     volta a ficar ativo sozinho (fim das ferias).
+-- Chamada no inicio do sorteio semanal e da invalidacao de sorteio, e
+-- tambem pelo site sempre que a lista de pessoas ou o status do ciclo sao
+-- carregados -- assim ninguem fica com o status errado so porque nenhum
+-- sorteio rodou nesse meio tempo.
 -- ----------------------------------------------------------------------------
 
 create or replace function ovos_reactivate_expired()
@@ -96,7 +106,15 @@ security definer
 set search_path = public, extensions
 as $$
   update ovos_people
+     set active = false,
+         inactive_from = null
+   where active = true
+     and inactive_from is not null
+     and inactive_from <= current_date;
+
+  update ovos_people
      set active = true,
+         inactive_from = null,
          inactive_until = null
    where active = false
      and inactive_until is not null
@@ -149,8 +167,12 @@ end;
 $$;
 
 drop function if exists ovos_admin_update_person(text, uuid, text, text, boolean);
+drop function if exists ovos_admin_update_person(text, uuid, text, text, boolean, date);
 
-create or replace function ovos_admin_update_person(p_password text, p_id uuid, p_name text, p_phone text, p_active boolean, p_inactive_until date default null)
+create or replace function ovos_admin_update_person(
+  p_password text, p_id uuid, p_name text, p_phone text, p_active boolean,
+  p_inactive_until date default null, p_inactive_from date default null
+)
 returns void
 language plpgsql
 security definer
@@ -167,8 +189,17 @@ begin
      set name = trim(p_name),
          phone = trim(p_phone),
          active = p_active,
-         -- se voltou pra ativo, nao faz sentido guardar data de retorno
-         inactive_until = case when p_active then null else p_inactive_until end
+         -- inactive_from so faz sentido pra quem continua ativo agora (agenda
+         -- uma ausencia futura); se ja esta inativo, o inicio ja passou.
+         inactive_from = case when p_active then p_inactive_from else null end,
+         -- inactive_until so faz sentido se a pessoa esta inativa agora OU
+         -- se tem um inicio de ausencia futura agendado (par inicio/fim);
+         -- sem nenhum dos dois, nao ha o que guardar.
+         inactive_until = case
+                             when not p_active then p_inactive_until
+                             when p_inactive_from is not null then p_inactive_until
+                             else null
+                           end
    where id = p_id;
 end;
 $$;
@@ -411,6 +442,6 @@ grant execute on function ovos_perform_weekly_draw() to service_role;
 
 grant execute on function ovos_admin_login(text) to anon, authenticated;
 grant execute on function ovos_admin_add_person(text, text, text) to anon, authenticated;
-grant execute on function ovos_admin_update_person(text, uuid, text, text, boolean, date) to anon, authenticated;
+grant execute on function ovos_admin_update_person(text, uuid, text, text, boolean, date, date) to anon, authenticated;
 grant execute on function ovos_admin_delete_person(text, uuid) to anon, authenticated;
 grant execute on function ovos_admin_invalidate_draw(text, uuid, uuid) to anon, authenticated;

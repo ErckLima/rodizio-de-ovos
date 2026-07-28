@@ -392,6 +392,7 @@ table.people-table th, table.people-table td {
 .badge.active { background: #e3f6e8; color: #2d9d4f; }
 .badge.inactive { background: #f4e4e4; color: var(--accent-2); }
 .badge.drawn { background: #fdeecb; color: #b3720b; margin-left: 4px; }
+.badge.scheduled { background: #e3ecfb; color: #3061c4; margin-left: 4px; }
 
 .row-actions button {
   border: none;

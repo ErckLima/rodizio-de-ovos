@@ -287,6 +287,8 @@
     const personName = document.getElementById("personName");
     const personPhone = document.getElementById("personPhone");
     const personActive = document.getElementById("personActive");
+    const personInactiveFrom = document.getElementById("personInactiveFrom");
+    const inactiveFromField = document.getElementById("inactiveFromField");
     const personInactiveUntil = document.getElementById("personInactiveUntil");
     const inactiveUntilField = document.getElementById("inactiveUntilField");
     const personSubmitBtn = document.getElementById("personSubmitBtn");
@@ -297,20 +299,32 @@
     closeAdminBtn.addEventListener("click", () => hideOverlay(adminOverlay));
 
     const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    personInactiveFrom.min = tomorrow;
     personInactiveUntil.min = tomorrow;
 
+    // "Início de ausência" só faz sentido pra quem está ativo (agenda uma
+    // pausa futura). "Volta a ficar ativo" some quando a pessoa está ativa
+    // e não tem nenhuma pausa agendada -- só aparece se estiver inativa
+    // agora, ou se uma pausa futura foi agendada (pra dar o fim dela).
+    function updateInactiveFieldsVisibility() {
+      inactiveFromField.hidden = !personActive.checked;
+      inactiveUntilField.hidden = personActive.checked && !personInactiveFrom.value;
+    }
+
     personActive.addEventListener("change", () => {
-      inactiveUntilField.hidden = personActive.checked;
-      if (personActive.checked) personInactiveUntil.value = "";
+      if (!personActive.checked) personInactiveFrom.value = "";
+      updateInactiveFieldsVisibility();
     });
+    personInactiveFrom.addEventListener("input", updateInactiveFieldsVisibility);
 
     function resetForm() {
       personId.value = "";
       personName.value = "";
       personPhone.value = "";
       personActive.checked = true;
+      personInactiveFrom.value = "";
       personInactiveUntil.value = "";
-      inactiveUntilField.hidden = true;
+      updateInactiveFieldsVisibility();
       personSubmitBtn.textContent = "Adicionar pessoa";
       cancelEditBtn.hidden = true;
       personMsg.textContent = "";
@@ -341,7 +355,8 @@
             p_name: personName.value,
             p_phone: personPhone.value,
             p_active: personActive.checked,
-            p_inactive_until: personActive.checked ? null : personInactiveUntil.value || null,
+            p_inactive_from: personInactiveFrom.value || null,
+            p_inactive_until: personInactiveUntil.value || null,
           });
           if (error) throw error;
           personMsg.textContent = "Pessoa atualizada!";
@@ -370,8 +385,9 @@
       personName.value = row.name;
       personPhone.value = row.phone;
       personActive.checked = row.active;
+      personInactiveFrom.value = row.inactive_from || "";
       personInactiveUntil.value = row.inactive_until || "";
-      inactiveUntilField.hidden = row.active;
+      updateInactiveFieldsVisibility();
       personSubmitBtn.textContent = "Salvar edição";
       cancelEditBtn.hidden = false;
       personMsg.textContent = "";
@@ -499,12 +515,21 @@
       const statusBadge = row.active
         ? `<span class="badge active">Ativo</span>`
         : `<span class="badge inactive">${escapeHtml(inactiveLabel)}</span>`;
+      const scheduledLabel =
+        row.active && row.inactive_from
+          ? `Ausência agendada: ${formatDateBR(row.inactive_from)}${
+              row.inactive_until ? " até " + formatDateBR(row.inactive_until) : ""
+            }`
+          : "";
+      const scheduledBadge = scheduledLabel
+        ? `<span class="badge scheduled">${escapeHtml(scheduledLabel)}</span>`
+        : "";
       const drawnBadge = row.drawn_in_cycle ? `<span class="badge drawn">Já comprou no ciclo</span>` : "";
 
       tr.innerHTML = `
         <td>${escapeHtml(row.name)}</td>
         <td>${escapeHtml(row.phone)}</td>
-        <td>${statusBadge}${drawnBadge}</td>
+        <td>${statusBadge}${scheduledBadge}${drawnBadge}</td>
         <td class="row-actions">
           <button title="Editar" data-action="edit">✏️</button>
           <button title="Excluir" data-action="delete">🗑️</button>
