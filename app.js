@@ -87,11 +87,21 @@
     return div.innerHTML;
   }
 
+  function formatDateBR(isoDate) {
+    return new Date(isoDate + "T00:00:00").toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+
   // ---------------------------------------------------------------------
   // Tabela de status do ciclo: quem já comprou e quem ainda falta
   // ---------------------------------------------------------------------
   async function loadCycleStatus() {
     const area = document.getElementById("cycleStatusArea");
+
+    await sb.rpc("ovos_reactivate_expired");
 
     const { data, error } = await sb
       .from("ovos_people")
@@ -277,6 +287,8 @@
     const personName = document.getElementById("personName");
     const personPhone = document.getElementById("personPhone");
     const personActive = document.getElementById("personActive");
+    const personInactiveUntil = document.getElementById("personInactiveUntil");
+    const inactiveUntilField = document.getElementById("inactiveUntilField");
     const personSubmitBtn = document.getElementById("personSubmitBtn");
     const cancelEditBtn = document.getElementById("cancelEditBtn");
     const personMsg = document.getElementById("personMsg");
@@ -284,11 +296,21 @@
     setupOverlayDismiss(adminOverlay);
     closeAdminBtn.addEventListener("click", () => hideOverlay(adminOverlay));
 
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    personInactiveUntil.min = tomorrow;
+
+    personActive.addEventListener("change", () => {
+      inactiveUntilField.hidden = personActive.checked;
+      if (personActive.checked) personInactiveUntil.value = "";
+    });
+
     function resetForm() {
       personId.value = "";
       personName.value = "";
       personPhone.value = "";
       personActive.checked = true;
+      personInactiveUntil.value = "";
+      inactiveUntilField.hidden = true;
       personSubmitBtn.textContent = "Adicionar pessoa";
       cancelEditBtn.hidden = true;
       personMsg.textContent = "";
@@ -319,6 +341,7 @@
             p_name: personName.value,
             p_phone: personPhone.value,
             p_active: personActive.checked,
+            p_inactive_until: personActive.checked ? null : personInactiveUntil.value || null,
           });
           if (error) throw error;
           personMsg.textContent = "Pessoa atualizada!";
@@ -347,6 +370,8 @@
       personName.value = row.name;
       personPhone.value = row.phone;
       personActive.checked = row.active;
+      personInactiveUntil.value = row.inactive_until || "";
+      inactiveUntilField.hidden = row.active;
       personSubmitBtn.textContent = "Salvar edição";
       cancelEditBtn.hidden = false;
       personMsg.textContent = "";
@@ -450,6 +475,8 @@
     const tbody = document.getElementById("peopleTableBody");
     tbody.innerHTML = `<tr><td colspan="4">Carregando…</td></tr>`;
 
+    await sb.rpc("ovos_reactivate_expired");
+
     const { data, error } = await sb.from("ovos_people").select("*").order("name");
 
     if (error) {
@@ -466,9 +493,12 @@
     for (const row of data) {
       const tr = document.createElement("tr");
 
+      const inactiveLabel = row.inactive_until
+        ? `Inativo até ${formatDateBR(row.inactive_until)}`
+        : "Inativo";
       const statusBadge = row.active
         ? `<span class="badge active">Ativo</span>`
-        : `<span class="badge inactive">Inativo</span>`;
+        : `<span class="badge inactive">${escapeHtml(inactiveLabel)}</span>`;
       const drawnBadge = row.drawn_in_cycle ? `<span class="badge drawn">Já comprou no ciclo</span>` : "";
 
       tr.innerHTML = `

@@ -34,6 +34,12 @@ create table if not exists ovos_people (
   created_at timestamptz not null default now()
 );
 
+-- Data ate quando a pessoa fica inativa (ferias/ausencia). Quando nula e
+-- active=false, a inativacao e indefinida (ex: pessoa saiu da empresa).
+-- Quando preenchida, ovos_reactivate_expired() reativa a pessoa sozinha
+-- assim que essa data passa -- sem precisar de cron job.
+alter table ovos_people add column if not exists inactive_until date;
+
 -- Historico de sorteios (usado pela pagina principal e pelo lembrete de segunda).
 create table if not exists ovos_draws (
   id uuid primary key default gen_random_uuid(),
@@ -73,6 +79,31 @@ create policy "ovos_draws_select_public" on ovos_draws for select using (true);
 revoke insert, update, delete on ovos_people from anon, authenticated;
 revoke insert, update, delete on ovos_draws from anon, authenticated;
 revoke all on ovos_app_config from anon, authenticated;
+
+-- ----------------------------------------------------------------------------
+-- Reativa automaticamente quem estava inativo com data de retorno definida
+-- (ferias/ausencia) assim que essa data passa. Chamada no inicio do sorteio
+-- semanal e da invalidacao de sorteio, e tambem pelo site sempre que a
+-- lista de pessoas ou o status do ciclo sao carregados -- assim ninguem
+-- fica esquecido como inativo so porque nenhum sorteio rodou nesse meio
+-- tempo.
+-- ----------------------------------------------------------------------------
+
+create or replace function ovos_reactivate_expired()
+returns void
+language sql
+security definer
+set search_path = public, extensions
+as $$
+  update ovos_people
+     set active = true,
+         inactive_until = null
+   where active = false
+     and inactive_until is not null
+     and inactive_until < current_date;
+$$;
+
+grant execute on function ovos_reactivate_expired() to anon, authenticated, service_role;
 
 -- ----------------------------------------------------------------------------
 -- Funcoes de administracao (CRUD de pessoas), protegidas por senha
@@ -117,7 +148,9 @@ begin
 end;
 $$;
 
-create or replace function ovos_admin_update_person(p_password text, p_id uuid, p_name text, p_phone text, p_active boolean)
+drop function if exists ovos_admin_update_person(text, uuid, text, text, boolean);
+
+create or replace function ovos_admin_update_person(p_password text, p_id uuid, p_name text, p_phone text, p_active boolean, p_inactive_until date default null)
 returns void
 language plpgsql
 security definer
@@ -133,7 +166,9 @@ begin
   update ovos_people
      set name = trim(p_name),
          phone = trim(p_phone),
-         active = p_active
+         active = p_active,
+         -- se voltou pra ativo, nao faz sentido guardar data de retorno
+         inactive_until = case when p_active then null else p_inactive_until end
    where id = p_id;
 end;
 $$;
@@ -184,6 +219,8 @@ begin
   if v_hash is null or v_hash <> crypt(p_password, v_hash) then
     raise exception 'senha invalida';
   end if;
+
+  perform ovos_reactivate_expired();
 
   select * into v_draw from ovos_draws where id = p_draw_id;
   if not found then
@@ -282,6 +319,8 @@ declare
   v_first_draw record;
   v_repeat_id uuid;
 begin
+  perform ovos_reactivate_expired();
+
   select count(*) into v_active_count from ovos_people where active = true;
   if v_active_count < 2 then
     raise exception 'pessoas ativas insuficientes (minimo 2, atual %)', v_active_count;
@@ -372,6 +411,6 @@ grant execute on function ovos_perform_weekly_draw() to service_role;
 
 grant execute on function ovos_admin_login(text) to anon, authenticated;
 grant execute on function ovos_admin_add_person(text, text, text) to anon, authenticated;
-grant execute on function ovos_admin_update_person(text, uuid, text, text, boolean) to anon, authenticated;
+grant execute on function ovos_admin_update_person(text, uuid, text, text, boolean, date) to anon, authenticated;
 grant execute on function ovos_admin_delete_person(text, uuid) to anon, authenticated;
 grant execute on function ovos_admin_invalidate_draw(text, uuid, uuid) to anon, authenticated;

@@ -69,6 +69,10 @@
           <input type="checkbox" id="personActive" checked />
           <label for="personActive">Ativo (participa dos sorteios)</label>
         </div>
+        <div class="field" id="inactiveUntilField" hidden>
+          <label for="personInactiveUntil">Volta a ficar ativo sozinho em (opcional — férias/ausência)</label>
+          <input type="date" id="personInactiveUntil" />
+        </div>
         <button type="submit" class="btn btn-primary" id="personSubmitBtn">Adicionar pessoa</button>
         <button type="button" class="btn btn-muted" id="cancelEditBtn" hidden>Cancelar edição</button>
         <div class="form-msg" id="personMsg"></div>

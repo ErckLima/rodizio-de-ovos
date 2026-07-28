@@ -313,7 +313,8 @@ header p {
 }
 .field input[type="text"],
 .field input[type="password"],
-.field input[type="tel"] {
+.field input[type="tel"],
+.field input[type="date"] {
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid #e2d5c3;
