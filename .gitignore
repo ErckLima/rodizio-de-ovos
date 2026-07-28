@@ -1,0 +1,4 @@
+# Configuração pessoal do Claude Code (hook de notificação no WhatsApp,
+# caminho absoluto da máquina) -- não faz sentido para quem clonar o repo.
+.claude/settings.local.json
+.claude/hooks/
