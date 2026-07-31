@@ -1,0 +1,39 @@
+{
+  "name": "Rodizio de Ovos - Notificar Teams (Adaptive Card)",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "COLOQUE_AQUI_A_URL_DO_WEBHOOK_DO_TEAMS",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"type\": \"message\",\n  \"attachments\": [\n    {\n      \"contentType\": \"application/vnd.microsoft.card.adaptive\",\n      \"content\": {\n        \"$schema\": \"http://adaptivecards.io/schemas/adaptive-card.json\",\n        \"type\": \"AdaptiveCard\",\n        \"version\": \"1.4\",\n        \"body\": [\n          {\n            \"type\": \"TextBlock\",\n            \"text\": \"🥚 ESCALA DE COMPRA DE OVOS 🥚\",\n            \"weight\": \"Bolder\",\n            \"size\": \"Large\",\n            \"wrap\": true\n          },\n          {\n            \"type\": \"TextBlock\",\n            \"text\": \"📅 Semana atual\",\n            \"weight\": \"Bolder\",\n            \"spacing\": \"Medium\",\n            \"wrap\": true\n          },\n          {\n            \"type\": \"TextBlock\",\n            \"text\": \"Início em: {{ $json.draw_date.split('-').reverse().join('/') }}\",\n            \"wrap\": true\n          },\n          {\n            \"type\": \"TextBlock\",\n            \"text\": \"👥 Responsáveis\",\n            \"weight\": \"Bolder\",\n            \"spacing\": \"Medium\",\n            \"wrap\": true\n          },\n          {\n            \"type\": \"TextBlock\",\n            \"text\": \"{{ $json.person1_name }} e {{ $json.person2_name }}\",\n            \"wrap\": true\n          },\n          {\n            \"type\": \"TextBlock\",\n            \"text\": \"🛒 Padrão de compra\",\n            \"weight\": \"Bolder\",\n            \"spacing\": \"Medium\",\n            \"wrap\": true\n          },\n          {\n            \"type\": \"TextBlock\",\n            \"text\": \"Cada um deve comprar uma cartela com 30 ovos\",\n            \"wrap\": true\n          },\n          {\n            \"type\": \"TextBlock\",\n            \"text\": \"🔁 Ciclo atual: #{{ $json.cycle_number }}\",\n            \"spacing\": \"Medium\",\n            \"isSubtle\": true,\n            \"wrap\": true\n          }\n        ]\n      }\n    }\n  ]\n}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true,
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Notificar Teams (Adaptive Card)",
+      "id": "http-notify-teams-card",
+      "position": [0, 0]
+    }
+  ],
+  "connections": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
