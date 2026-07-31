@@ -1,0 +1,38 @@
+{
+  "name": "Rodizio de Ovos - Notificar Teams (Power Automate)",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://default514a8bc3685246e9a69d241b5f3600.75.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/7d2a5615f818412aaf045374dd453ae0/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=_i3jnWuOb0PGggEy4DJZ6uf1-KkaypUWe3VZ3Kjhv8U",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"mensagem\": \"🥚🎉 *Sorteio da Semana — Rodízio de Ovos!* 🎉🥚\\n\\n📋 *Responsáveis por comprar os ovos:*\\n🟡 {{ $json.person1_name }}\\n🟡 {{ $json.person2_name }}\\n\\n🛒 Cada um compra 1 cartela de 30 ovos até quinta-feira.\\n📅 Ciclo atual: #{{ $json.cycle_number }}\\n\\nBom apetite a todos! 🍳\" }",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "name": "Notificar Teams (Power Automate)",
+      "id": "http-notify-teams",
+      "position": [0, 0]
+    }
+  ],
+  "connections": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
