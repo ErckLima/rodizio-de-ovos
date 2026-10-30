@@ -95,6 +95,24 @@
     </div>
   </div>
 
+  <!-- Modal da senha super: devolver pessoa ja sorteada ao ciclo -->
+  <div class="modal-overlay" id="superOverlay" hidden>
+    <div class="modal">
+      <button class="close-btn" id="closeSuperBtn" aria-label="Fechar">✕</button>
+      <h2>Devolver ao sorteio</h2>
+      <p>Escolha quem já foi sorteado neste ciclo para voltar à lista de quem ainda vai sortear.</p>
+      <div class="form-msg" id="superMsg"></div>
+      <table class="people-table">
+        <thead>
+          <tr><th>Nome</th><th></th></tr>
+        </thead>
+        <tbody id="superTableBody">
+          <tr><td colspan="2">Carregando…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   <script src="config.js"></script>
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>

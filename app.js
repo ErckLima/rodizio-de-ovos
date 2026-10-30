@@ -5,6 +5,7 @@
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let adminPassword = null; // fica só em memória, nunca em localStorage
+  let superPassword = null; // idem; libera só o "devolver ao sorteio"
   let currentDraw = null;
 
   // ---------------------------------------------------------------------
@@ -245,6 +246,10 @@
         loadPeople();
         return;
       }
+      if (superPassword) {
+        openSuperPanel();
+        return;
+      }
       loginMsg.textContent = "";
       loginMsg.className = "form-msg";
       loginPassword.value = "";
@@ -262,6 +267,19 @@
       const { data, error } = await sb.rpc("ovos_admin_login", {
         p_password: loginPassword.value,
       });
+
+      if (!error && data !== true) {
+        // nao e a senha de admin: pode ser a senha super (devolver sorteado)
+        const superRes = await sb.rpc("ovos_super_login", {
+          p_password: loginPassword.value,
+        });
+        if (!superRes.error && superRes.data === true) {
+          superPassword = loginPassword.value;
+          hideOverlay(loginOverlay);
+          openSuperPanel();
+          return;
+        }
+      }
 
       if (error || data !== true) {
         loginMsg.textContent = "Senha incorreta.";
@@ -410,9 +428,85 @@
     };
   }
 
+  // ---------------------------------------------------------------------
+  // Senha super: devolver alguém já sorteado para o pool do ciclo atual
+  // ---------------------------------------------------------------------
+  function initSuperPanel() {
+    const superOverlay = document.getElementById("superOverlay");
+    setupOverlayDismiss(superOverlay);
+    document
+      .getElementById("closeSuperBtn")
+      .addEventListener("click", () => hideOverlay(superOverlay));
+  }
+
+  function openSuperPanel() {
+    const msg = document.getElementById("superMsg");
+    msg.textContent = "";
+    msg.className = "form-msg";
+    showOverlay(document.getElementById("superOverlay"));
+    loadSuperList();
+  }
+
+  async function loadSuperList() {
+    const tbody = document.getElementById("superTableBody");
+    const { data, error } = await sb
+      .from("ovos_people")
+      .select("id, name")
+      .eq("active", true)
+      .eq("drawn_in_cycle", true)
+      .order("name");
+
+    if (error) {
+      tbody.innerHTML = `<tr><td colspan="2">Erro ao carregar.</td></tr>`;
+      return;
+    }
+    if (!data.length) {
+      tbody.innerHTML = `<tr><td colspan="2">Ninguém foi sorteado neste ciclo ainda.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = data
+      .map(
+        (p) => `
+        <tr>
+          <td>${escapeHtml(p.name)}</td>
+          <td><button type="button" class="btn btn-primary" data-return="${p.id}">↩️ Voltar ao sorteio</button></td>
+        </tr>`
+      )
+      .join("");
+
+    tbody.querySelectorAll("[data-return]").forEach((btn) => {
+      const person = data.find((p) => p.id === btn.dataset.return);
+      btn.addEventListener("click", () => returnPersonToPool(person));
+    });
+  }
+
+  async function returnPersonToPool(person) {
+    const msg = document.getElementById("superMsg");
+    if (!confirm(`Devolver ${person.name} para "Ainda vão sortear" neste ciclo?`)) return;
+
+    const { error } = await sb.rpc("ovos_super_return_person", {
+      p_password: superPassword,
+      p_id: person.id,
+    });
+    if (error) {
+      msg.textContent = readableError(error);
+      msg.className = "form-msg error";
+      return;
+    }
+
+    msg.innerHTML = `${escapeHtml(person.name)} voltou para a lista de quem ainda vai sortear.`;
+    msg.className = "form-msg ok";
+    loadSuperList();
+    loadCycleStatus();
+  }
+
   function readableError(err) {
     const msg = err?.message || "";
     if (msg.includes("senha invalida")) return "Senha incorreta.";
+    if (msg.includes("pessoa nao esta entre os ja sorteados")) {
+      return "Essa pessoa já não está entre os sorteados — recarregue a lista.";
+    }
     if (msg.includes("nao ha ninguem ativo disponivel")) {
       return "Não há ninguém ativo disponível para substituir. Cadastre mais gente antes de invalidar.";
     }
@@ -550,6 +644,7 @@
     initEggBackground();
     initLogin();
     initAdminPanel();
+    initSuperPanel();
     loadLatestDraw();
     loadCycleStatus();
   });

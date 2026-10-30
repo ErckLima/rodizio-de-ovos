@@ -24,6 +24,10 @@ create table if not exists ovos_app_config (
 );
 insert into ovos_app_config (id) values (1) on conflict (id) do nothing;
 
+-- Senha separada (so do dono do rodizio) que libera devolver uma pessoa ja
+-- sorteada para o pool do ciclo atual. Nao da acesso ao CRUD de pessoas.
+alter table ovos_app_config add column if not exists super_password_hash text;
+
 -- Pessoas cadastradas no rodizio.
 create table if not exists ovos_people (
   id uuid primary key default gen_random_uuid(),
@@ -222,6 +226,52 @@ end;
 $$;
 
 -- ----------------------------------------------------------------------------
+-- Funcoes da senha "super": devolve uma pessoa que ja foi sorteada neste
+-- ciclo para a lista de quem ainda vai sortear (ex: correcao manual). Nao
+-- mexe em nenhum sorteio ja registrado, so no drawn_in_cycle da pessoa.
+-- ----------------------------------------------------------------------------
+
+create or replace function ovos_super_login(p_password text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_hash text;
+begin
+  select super_password_hash into v_hash from ovos_app_config where id = 1;
+  if v_hash is null then
+    return false;
+  end if;
+  return v_hash = crypt(p_password, v_hash);
+end;
+$$;
+
+create or replace function ovos_super_return_person(p_password text, p_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_hash text;
+begin
+  select super_password_hash into v_hash from ovos_app_config where id = 1;
+  if v_hash is null or v_hash <> crypt(p_password, v_hash) then
+    raise exception 'senha invalida';
+  end if;
+  update ovos_people
+     set drawn_in_cycle = false
+   where id = p_id
+     and drawn_in_cycle = true;
+  if not found then
+    raise exception 'pessoa nao esta entre os ja sorteados';
+  end if;
+end;
+$$;
+
+-- ----------------------------------------------------------------------------
 -- Invalida um dos dois sorteados do sorteio atual (ex: a pessoa saiu da
 -- empresa e ninguem lembrou de inativar). Inativa a pessoa automaticamente
 -- e sorteia um substituto so pra aquela vaga, sem mexer no outro sorteado.
@@ -349,6 +399,7 @@ declare
   v_leftover record;
   v_first_draw record;
   v_repeat_id uuid;
+  v_last_draw record;
 begin
   perform ovos_reactivate_expired();
 
@@ -366,10 +417,35 @@ begin
     v_cycle := v_cycle + 1;
     update ovos_app_config set cycle_number = v_cycle where id = 1;
 
-    select id, name, phone into v_p1 from ovos_people where active = true order by random() limit 1;
+    -- a dupla da semana passada acabou de comprar: fica fora do primeiro
+    -- sorteio do ciclo novo (senao alguem pode comprar 2 semanas seguidas).
+    -- Se nao sobrar gente suficiente sem eles, aceita repetir.
+    select d.person1_id, d.person2_id
+      into v_last_draw
+      from ovos_draws d
+     order by d.created_at desc
+     limit 1;
+
+    select id, name, phone into v_p1
+      from ovos_people
+     where active = true
+       and id is distinct from v_last_draw.person1_id
+       and id is distinct from v_last_draw.person2_id
+     order by random() limit 1;
+    if not found then
+      select id, name, phone into v_p1 from ovos_people where active = true order by random() limit 1;
+    end if;
     update ovos_people set drawn_in_cycle = true where id = v_p1.id;
 
-    select id, name, phone into v_p2 from ovos_people where active = true and drawn_in_cycle = false order by random() limit 1;
+    select id, name, phone into v_p2
+      from ovos_people
+     where active = true and drawn_in_cycle = false
+       and id is distinct from v_last_draw.person1_id
+       and id is distinct from v_last_draw.person2_id
+     order by random() limit 1;
+    if not found then
+      select id, name, phone into v_p2 from ovos_people where active = true and drawn_in_cycle = false order by random() limit 1;
+    end if;
     update ovos_people set drawn_in_cycle = true where id = v_p2.id;
 
   elsif v_pool_count = 1 then
@@ -445,3 +521,5 @@ grant execute on function ovos_admin_add_person(text, text, text) to anon, authe
 grant execute on function ovos_admin_update_person(text, uuid, text, text, boolean, date, date) to anon, authenticated;
 grant execute on function ovos_admin_delete_person(text, uuid) to anon, authenticated;
 grant execute on function ovos_admin_invalidate_draw(text, uuid, uuid) to anon, authenticated;
+grant execute on function ovos_super_login(text) to anon, authenticated;
+grant execute on function ovos_super_return_person(text, uuid) to anon, authenticated;
