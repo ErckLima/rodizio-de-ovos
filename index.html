@@ -95,19 +95,19 @@
     </div>
   </div>
 
-  <!-- Modal da senha super: devolver pessoa ja sorteada ao ciclo -->
+  <!-- Modal da senha super: devolver ao ciclo ou marcar como pago -->
   <div class="modal-overlay" id="superOverlay" hidden>
     <div class="modal">
       <button class="close-btn" id="closeSuperBtn" aria-label="Fechar">✕</button>
-      <h2>Devolver ao sorteio</h2>
-      <p>Escolha quem já foi sorteado neste ciclo para voltar à lista de quem ainda vai sortear.</p>
+      <h2>Ajustar ciclo</h2>
+      <p>Devolva ao sorteio quem já foi sorteado ou marque como pago quem ainda falta neste ciclo.</p>
       <div class="form-msg" id="superMsg"></div>
       <table class="people-table">
         <thead>
-          <tr><th>Nome</th><th></th></tr>
+          <tr><th>Nome</th><th>Situação</th><th></th></tr>
         </thead>
         <tbody id="superTableBody">
-          <tr><td colspan="2">Carregando…</td></tr>
+          <tr><td colspan="3">Carregando…</td></tr>
         </tbody>
       </table>
     </div>

@@ -429,7 +429,7 @@
   }
 
   // ---------------------------------------------------------------------
-  // Senha super: devolver alguém já sorteado para o pool do ciclo atual
+  // Senha super: devolver alguém ao pool do ciclo ou marcar como pago
   // ---------------------------------------------------------------------
   function initSuperPanel() {
     const superOverlay = document.getElementById("superOverlay");
@@ -451,17 +451,17 @@
     const tbody = document.getElementById("superTableBody");
     const { data, error } = await sb
       .from("ovos_people")
-      .select("id, name")
+      .select("id, name, drawn_in_cycle")
       .eq("active", true)
-      .eq("drawn_in_cycle", true)
+      .order("drawn_in_cycle")
       .order("name");
 
     if (error) {
-      tbody.innerHTML = `<tr><td colspan="2">Erro ao carregar.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="3">Erro ao carregar.</td></tr>`;
       return;
     }
     if (!data.length) {
-      tbody.innerHTML = `<tr><td colspan="2">Ninguém foi sorteado neste ciclo ainda.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="3">Ninguém ativo no rodízio.</td></tr>`;
       return;
     }
 
@@ -470,7 +470,12 @@
         (p) => `
         <tr>
           <td>${escapeHtml(p.name)}</td>
-          <td><button type="button" class="btn btn-primary" data-return="${p.id}">↩️ Voltar ao sorteio</button></td>
+          <td>${p.drawn_in_cycle ? `<span class="badge drawn">Já sorteado</span>` : `<span class="badge active">Falta sortear</span>`}</td>
+          <td>${
+            p.drawn_in_cycle
+              ? `<button type="button" class="btn btn-muted" data-return="${p.id}">↩️ Voltar ao sorteio</button>`
+              : `<button type="button" class="btn btn-primary" data-paid="${p.id}">✅ Marcar como pago</button>`
+          }</td>
         </tr>`
       )
       .join("");
@@ -479,6 +484,30 @@
       const person = data.find((p) => p.id === btn.dataset.return);
       btn.addEventListener("click", () => returnPersonToPool(person));
     });
+    tbody.querySelectorAll("[data-paid]").forEach((btn) => {
+      const person = data.find((p) => p.id === btn.dataset.paid);
+      btn.addEventListener("click", () => markPersonPaid(person));
+    });
+  }
+
+  async function markPersonPaid(person) {
+    const msg = document.getElementById("superMsg");
+    if (!confirm(`Marcar ${person.name} como pago neste ciclo? A pessoa não será sorteada até o próximo ciclo.`)) return;
+
+    const { error } = await sb.rpc("ovos_super_mark_paid", {
+      p_password: superPassword,
+      p_id: person.id,
+    });
+    if (error) {
+      msg.textContent = readableError(error);
+      msg.className = "form-msg error";
+      return;
+    }
+
+    msg.innerHTML = `${escapeHtml(person.name)} foi marcado(a) como pago(a) neste ciclo.`;
+    msg.className = "form-msg ok";
+    loadSuperList();
+    loadCycleStatus();
   }
 
   async function returnPersonToPool(person) {
@@ -506,6 +535,9 @@
     if (msg.includes("senha invalida")) return "Senha incorreta.";
     if (msg.includes("pessoa nao esta entre os ja sorteados")) {
       return "Essa pessoa já não está entre os sorteados — recarregue a lista.";
+    }
+    if (msg.includes("pessoa nao esta entre os que faltam sortear")) {
+      return "Essa pessoa já não está entre os que faltam — recarregue a lista.";
     }
     if (msg.includes("nao ha ninguem ativo disponivel")) {
       return "Não há ninguém ativo disponível para substituir. Cadastre mais gente antes de invalidar.";

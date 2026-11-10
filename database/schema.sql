@@ -271,6 +271,32 @@ begin
 end;
 $$;
 
+-- O inverso: marca quem ainda nao foi sorteado como ja pago neste ciclo (ex:
+-- comprou por fora do sorteio), tirando a pessoa do pool ate o ciclo virar.
+create or replace function ovos_super_mark_paid(p_password text, p_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_hash text;
+begin
+  select super_password_hash into v_hash from ovos_app_config where id = 1;
+  if v_hash is null or v_hash <> crypt(p_password, v_hash) then
+    raise exception 'senha invalida';
+  end if;
+  update ovos_people
+     set drawn_in_cycle = true
+   where id = p_id
+     and active = true
+     and drawn_in_cycle = false;
+  if not found then
+    raise exception 'pessoa nao esta entre os que faltam sortear';
+  end if;
+end;
+$$;
+
 -- ----------------------------------------------------------------------------
 -- Invalida um dos dois sorteados do sorteio atual (ex: a pessoa saiu da
 -- empresa e ninguem lembrou de inativar). Inativa a pessoa automaticamente
@@ -523,3 +549,4 @@ grant execute on function ovos_admin_delete_person(text, uuid) to anon, authenti
 grant execute on function ovos_admin_invalidate_draw(text, uuid, uuid) to anon, authenticated;
 grant execute on function ovos_super_login(text) to anon, authenticated;
 grant execute on function ovos_super_return_person(text, uuid) to anon, authenticated;
+grant execute on function ovos_super_mark_paid(text, uuid) to anon, authenticated;
